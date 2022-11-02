@@ -1,0 +1,771 @@
+hibernate.dialect org.hibernate.dialect.PostgreSQLDialect hibernate.connection.driver_class org.postgresql.Driver hibernate.connection.url jdbc:postgresql://localhost:5432/trabalhoaps hibernate.connection.username postgres hibernate.connection.password Veruk696-
+hibernate.show_sql false hibernate.format_sql false
+package DAO; import java.util.List;
+import org.hibernate.Criteria;
+import org.hibernate.HibernateException; import org.hibernate.Session;
+import org.hibernate.Transaction; import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+
+public class DaoGenerico {
+protected TrabalhoAPSConfiguracao trabalhoapsconfiguracao;
+
+public DaoGenerico () {
+trabalhoapsconfiguracao = new TrabalhoAPSConfiguracao();
+}
+public void gravar(Object obj) throws HibernateException { System.out.println("Gravando" + obj);
+Session session = trabalhoapsconfiguracao.openSession(); Transaction transaction = session.beginTransaction(); session.save(obj);
+transaction.commit(); session.close();
+}
+public void alterar(Object obj) throws HibernateException { Session session = trabalhoapsconfiguracao.openSession(); Transaction transaction = session.beginTransaction(); session.update(obj);
+transaction.commit(); session.close();
+}
+public void excluir(Object obj) throws HibernateException { Session session = trabalhoapsconfiguracao.openSession();
+ 
+Transaction transaction = session.beginTransaction(); session.delete(obj);
+transaction.commit(); session.close();
+}
+public List carregarTudoOrdenado(Class clas, String ordem) throws HibernateException {
+Session session = trabalhoapsconfiguracao.openSession(); Criteria criteria = session.createCriteria(clas); criteria.addOrder(Order.asc(ordem));
+List lista = criteria.list(); return lista;
+}
+
+}
+
+package DAO;
+
+import model.Authors; import model.Books; import model.BooksAuthor; import model.Publishers;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder; import org.hibernate.cfg.Configuration;
+import org.hibernate.service.ServiceRegistry;
+
+public class TrabalhoAPSConfiguracao {
+private static SessionFactory sessionFactory;
+
+public TrabalhoAPSConfiguracao() {
+}
+public Session openSession() { if (sessionFactory == null) { criaSessionFactory();
+}
+return sessionFactory.openSession();
+}
+public void criaSessionFactory() {
+Configuration configuration = new Configuration(); configuration.addAnnotatedClass(Authors.class); configuration.addAnnotatedClass(Publishers.class); configuration.addAnnotatedClass(Books.class);
+ 
+configuration.addAnnotatedClass(BooksAuthor.class);
+ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder(). applySettings(configuration.getProperties()).build();
+sessionFactory = configuration.buildSessionFactory(serviceRegistry);
+
+
+}
+}
+
+package model;
+
+import java.io.Serializable;
+import javax.persistence.Column; import javax.persistence.Entity;
+import javax.persistence.GeneratedValue; import javax.persistence.GenerationType; import javax.persistence.Id;
+
+@Entity
+public class Authors implements Serializable { @Id
+@Column(unique=true) @GeneratedValue(strategy=GenerationType.IDENTITY)
+
+private Integer author_id; private String name; private String fname;
+
+public Integer getAuthor_id() { return author_id;
+}
+
+public void setAuthor_id(Integer author_id) { this.author_id = author_id;
+}
+
+public String getName() { return name;
+}
+
+public void setName(String name) { this.name = name;
+}
+ 
+public String getFname() { return fname;
+}
+
+public void setFname(String fname) { this.fname = fname;
+}
+
+
+public Authors() {
+}
+
+
+@Override
+public String toString() { return this.getName();
+}
+
+
+
+
+}
+
+package control;
+
+import DAO.DaoAuthor; import java.util.List; import model.Authors;
+import org.hibernate.HibernateException;
+
+public class CtrManterAuthor { DaoAuthor acessohibernateauthor;
+
+public CtrManterAuthor() { acessohibernateauthor = new DaoAuthor();
+}
+public int gravarAuthors(Authors authors) { try {
+acessohibernateauthor.gravar(authors); return 1;
+} catch (HibernateException e) { e.printStackTrace();
+return 2;
+}
+}
+ 
+public List carregarAuthors() { try {
+return acessohibernateauthor.carregarTudoOrdenado(Authors.class, "nome");
+} catch (HibernateException e) { return null;
+}
+}
+public boolean excluirAuthors(Authors authors) { try {
+acessohibernateauthor.excluir(authors); return true;
+} catch (HibernateException e) { e.printStackTrace();
+return false;
+}
+}
+public boolean alterarAuthors(Authors authors) { try {
+acessohibernateauthor.alterar(authors); return true;
+} catch (HibernateException e) { e.printStackTrace();
+return false;
+}
+}
+}
+
+package DAO;
+public class DaoAuthor extends DaoGenerico{ public DaoAuthor() {
+}
+
+}
+
+package view;
+
+import control.CtrManterAuthor; import java.util.ArrayList; import java.util.Iterator;
+import java.util.List;
+import javax.swing.DefaultListModel;
+ 
+import javax.swing.JOptionPane; import model.Authors;
+
+public class FormManterAuthor extends javax.swing.JFrame {
+
+CtrManterAuthor ctrManterAuthor = new CtrManterAuthor(); Authors autho;
+public FormManterAuthor() { initComponents();
+}
+private void jBtnIncluirMouseClicked(java.awt.event.MouseEvent evt) { autho = new Authors(); autho.setAuthor_id(Integer.parseInt(jTxtId.getText())); autho.setName(jTxtNome.getText()); autho.setFname(jTxtFname.getText());
+if (ctrManterAuthor.gravarAuthors(autho) == 1) { JOptionPane.showMessageDialog(null, "Objeto persistido");
+} else {
+JOptionPane.showMessageDialog(null, "Objeto não persistido");
+}
+}
+
+private void jTxtFnameActionPerformed(java.awt.event.ActionEvent evt) {
+// TODO add your handling code here:
+}
+
+private void formWindowActivated(java.awt.event.WindowEvent evt) { DefaultListModel listModel = new DefaultListModel();
+List listAuthors = new ArrayList();
+listAuthors = ctrManterAuthor.carregarAuthors(); if (listAuthors != null) {
+Iterator i = listAuthors.iterator(); while (i.hasNext()) {
+Authors deptList = (Authors) i.next(); listModel.addElement(deptList);
+}
+jCbxAuthors.setModel(listModel);
+
+}
+}
+
+private void jCbxAuthorsMouseClicked(java.awt.event.MouseEvent evt) { autho = (Authors) jCbxAuthors.getSelectedValue();
+if (autho != null) {
+ 
+jTxtId.setText(autho.getAuthor_id().toString()); jTxtNome.setText(autho.getName()); jTxtFname.setText(autho.getFname());
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não Encontrado!");
+}
+}
+
+private void jBtnExcluirMouseClicked(java.awt.event.MouseEvent evt) { autho = (Authors) jCbxAuthors.getSelectedValue();
+if (autho != null) {
+if (ctrManterAuthor.excluirAuthors(autho)) { JOptionPane.showMessageDialog(null, "Objeto Excluído");
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não excluído");
+}
+}
+else {
+JOptionPane.showMessageDialog(null, "Selecione o Objeto");
+}
+}
+
+private void jBtnAlterarMouseClicked(java.awt.event.MouseEvent evt) { autho = (Authors) jCbxAuthors.getSelectedValue();
+if (autho != null) { autho.setAuthor_id(Integer.parseInt(jTxtId.getText())); autho.setName(jTxtNome.getText()); autho.setFname(jTxtFname.getText());
+if (ctrManterAuthor.alterarAuthors(autho)) { JOptionPane.showMessageDialog(null, "Objeto persistido");
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não persistido");
+}
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não localizado");
+}
+}
+
+public static void main(String args[]) { java.awt.EventQueue.invokeLater(new Runnable() {
+ 
+public void run() {
+new FormManterAuthor().setVisible(true);
+}
+});
+}
+package model;
+
+import java.io.Serializable;
+import javax.persistence.Column; import javax.persistence.Entity;
+import javax.persistence.GeneratedValue; import javax.persistence.GenerationType; import javax.persistence.Id;
+import javax.persistence.JoinColumn; import javax.persistence.ManyToOne; import javax.persistence.Temporal;
+
+@Entity
+public class Publishers implements Serializable{ @Id
+@Column(unique=true)
+@GeneratedValue (strategy=GenerationType.IDENTITY) private Integer publiesher_Id;
+private String publisher_Name; private String Url;
+
+public Publishers() {
+}
+
+
+public Integer getPublisher_Id() { return publiesher_Id;
+}
+
+public void setPublisher_Id(Integer publiesher_Id) { this.publiesher_Id = publiesher_Id;
+}
+
+public String getPublisher_Name() { return publisher_Name;
+}
+
+public void setPublisher_Name(String pubiesher_Name) { this.publisher_Name = pubiesher_Name;
+ 
+}
+
+public String getUrl() { return Url;
+}
+
+public void setUrl(String Url) { this.Url = Url;
+}
+
+@Override
+public String toString() {
+return this.getPublisher_Name();
+}
+
+
+}
+
+package control;
+
+import DAO.DaoPublisher; import java.util.List; import model.Publishers;
+import org.hibernate.HibernateException;
+
+
+public class CtrManterPublisher { DaoPublisher acessohibernatepub;
+
+public CtrManterPublisher(){ acessohibernatepub = new DaoPublisher();
+}
+public int gravarPublisher(Publishers publisher) { try {
+acessohibernatepub.gravar(publisher); return 1;
+} catch (HibernateException e) { return 2;
+}
+}
+public List carregarPublisher() { try {
+return acessohibernatepub.carregarTudoOrdenado(Publishers.class, "nome");
+ 
+} catch (HibernateException e) { return null;
+}
+}
+public boolean excluirPublisher(Publishers publisher) { try {
+acessohibernatepub.excluir(publisher); return true;
+} catch (HibernateException e) { return false;
+}
+}
+public boolean alterarPublisher(Publishers publisher) { try {
+acessohibernatepub.alterar(publisher); return true;
+} catch (HibernateException e) { return false;
+}
+}
+
+}
+
+package DAO;
+
+public class DaoPublisher extends DaoGenerico{ public DaoPublisher(){
+}
+
+}
+
+package view;
+
+import control.CtrManterAuthor; import control.CtrManterPublisher; import java.util.ArrayList;
+import java.util.Iterator;
+import javax.swing.DefaultComboBoxModel; import java.util.List;
+import javax.swing.DefaultListModel; import javax.swing.JOptionPane; import model.Authors;
+ 
+import model.Publishers;
+
+
+
+public class FormManterPublisher extends javax.swing.JFrame {
+
+CtrManterPublisher ctrManterPublisher; CtrManterAuthor ctrManterAuthor;
+Authors authors;
+Publishers publishers;
+
+
+public FormManterPublisher() { initComponents();
+}
+
+private void jBtnExcluirActionPerformed(java.awt.event.ActionEvent evt) { publishers = (Publishers) jCbxtPublisher.getSelectedValue();
+if (ctrManterPublisher.excluirPublisher(publishers)) { JOptionPane.showMessageDialog(this, "Objeto excluido");
+} else {
+JOptionPane.showMessageDialog(this, "Objeto não excluido");
+}
+
+}
+
+private void formWindowActivated(java.awt.event.WindowEvent evt) { ctrManterPublisher = new CtrManterPublisher();
+ctrManterAuthor = new CtrManterAuthor(); authors = new Authors();
+publishers = new Publishers();
+
+DefaultListModel listModel = new DefaultListModel(); List listPub = new ArrayList();
+
+listPub = ctrManterPublisher.carregarPublisher(); if (listPub != null) {
+Iterator i = listPub.iterator(); while (i.hasNext()) {
+Publishers pubList = (Publishers) i.next(); listModel.addElement(pubList);
+}
+}
+jCbxtPublisher.setModel(listModel);
+ 
+DefaultComboBoxModel modelCombo = new DefaultComboBoxModel(); List listAut = ctrManterAuthor.carregarAuthors();
+if (listAut != null) {
+Iterator j = listAut.iterator(); while (j.hasNext()) {
+Authors autList = (Authors) j.next(); modelCombo.addElement(autList);
+}
+}
+}
+
+private void jCbxtPublisherMouseClicked(java.awt.event.MouseEvent evt) { publishers = (Publishers) jCbxtPublisher.getSelectedValue();
+
+if (publishers != null) { jTxtPublisher_Id.setText(publishers.getPublisher_Id().toString()); jTxtPublisher_Name.setText(publishers.getPublisher_Name()); jTxtUrl.setText(publishers.getUrl());
+int cont;
+} else {
+JOptionPane.showMessageDialog(null, "Objeto não Encontrado!");
+}
+}
+
+private void jBtnExcluirMouseClicked(java.awt.event.MouseEvent evt) { publishers = (Publishers) jCbxtPublisher.getSelectedValue();
+if (ctrManterPublisher.excluirPublisher(publishers)) { JOptionPane.showMessageDialog(this, "Objeto excluido");
+} else {
+JOptionPane.showMessageDialog(this, "Objeto não excluido");
+}
+}
+
+private void jBtnIncluirMouseClicked(java.awt.event.MouseEvent evt) { publishers = new Publishers(); publishers.setPublisher_Id(Integer.parseInt(jTxtPublisher_Id.getText())); publishers.setPublisher_Name(jTxtPublisher_Name.getText()); publishers.setUrl(jTxtUrl.getText());
+if (ctrManterPublisher.gravarPublisher(publishers) == 1) { JOptionPane.showMessageDialog(null, "Objeto persistido");
+} else {
+JOptionPane.showMessageDialog(null, "Objeto não persistido");
+}
+}
+ 
+private void jBtnAlterarMouseClicked(java.awt.event.MouseEvent evt) { publishers = (Publishers) jCbxtPublisher.getSelectedValue();
+if (publishers != null) { publishers.setPublisher_Id(Integer.parseInt(jTxtPublisher_Id.getText())); publishers.setPublisher_Name(jTxtPublisher_Name.getText()); publishers.setUrl(jTxtUrl.getText());
+if (ctrManterPublisher.alterarPublisher(publishers)) { JOptionPane.showMessageDialog(null, "Objeto persistido");
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não persistido");
+}
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não localizado");
+}
+}
+public static void main(String args[]) { java.awt.EventQueue.invokeLater(new Runnable() {
+public void run() {
+new FormManterPublisher().setVisible(true);
+}
+});
+}
+
+package model;
+
+import java.io.Serializable;
+import javax.persistence.Column; import javax.persistence.Entity;
+import javax.persistence.GeneratedValue; import javax.persistence.GenerationType; import javax.persistence.Id;
+
+
+public class Books { @Id
+@Column(unique=true) @GeneratedValue(strategy=GenerationType.IDENTITY)
+
+private String titulo; private String isbn;
+private Integer publisher_id;
+ 
+private double preco;
+
+public Books(String titulo, String isbn, Integer publisher_id, double preco) {
+}
+
+public String getTitulo() { return titulo;
+}
+
+public void setTitulo(String titulo) { this.titulo = titulo;
+}
+
+public String getIsbn() { return isbn;
+}
+
+public void setIsbn(String isbn) { this.isbn = isbn;
+}
+
+public Integer getPublisher_id() { return publisher_id;
+}
+
+public void setPublisher_id(Integer publisher_id) { this.publisher_id = publisher_id;
+}
+
+public double getPreco() { return preco;
+}
+
+public void setPreco(double preco) { this.preco = preco;
+}
+
+public Books() {
+}
+
+
+@Override
+public String toString() { return this.getTitulo();
+ 
+}
+
+
+
+}
+package control;
+
+import DAO.DaoBooks; import java.util.List; import model.Books;
+import model.BooksAuthor;
+import org.hibernate.HibernateException;
+
+public class CtrManterBooks { DaoBooks acessohibernatebooks;
+
+public CtrManterBooks() { acessohibernatebooks = new DaoBooks();
+}
+public int gravarBooks(Books books) { try {
+acessohibernatebooks.gravar(books); return 1;
+} catch (HibernateException e) { e.printStackTrace();
+return 2;
+}
+}
+public List carregarBooks() { try {
+return acessohibernatebooks.carregarTudoOrdenado(Books.class, "nome");
+} catch (HibernateException e) { return null;
+}
+}
+public boolean excluirBooks(Books books) { try {
+acessohibernatebooks.excluir(books); return true;
+} catch (HibernateException e) { e.printStackTrace();
+return false;
+}
+ 
+}
+public boolean alterarBooks(Books books) { try {
+acessohibernatebooks.alterar(books); return true;
+} catch (HibernateException e) { e.printStackTrace();
+return false;
+}
+}
+}
+
+package DAO;
+public class DaoBooks extends DaoGenerico{ public DaoBooks() {
+}
+
+}
+
+package view;
+
+import control.CtrManterBooks; import java.util.ArrayList; import java.util.Iterator;
+import java.util.List;
+import javax.swing.DefaultListModel; import javax.swing.JOptionPane; import model.Books;
+public class FormManterBooks extends javax.swing.JFrame { CtrManterBooks ctrManterBooks;
+Books books;
+
+public FormManterBooks() { initComponents();
+}
+private void formWindowActivated(java.awt.event.WindowEvent evt) { DefaultListModel listModel = new DefaultListModel();
+List listBooks = new ArrayList(); ctrManterBooks = new CtrManterBooks(); books = new Books();
+ 
+listBooks = ctrManterBooks.carregarBooks(); if (listBooks != null) {
+Iterator i = listBooks.iterator(); while (i.hasNext()) {
+Books bookList = (Books) i.next(); listModel.addElement(bookList);
+}
+jLstBooks.setModel(listModel);
+}
+}
+
+private void jLstBooksMouseClicked(java.awt.event.MouseEvent evt) { books = (Books) jLstBooks.getSelectedValue();
+if (books != null) { jTxtIsbn.setText(books.getIsbn()); jTxtTitulo.setText(books.getTitulo());
+jTxtPublisherId.setText(books.getPublisher_id().toString()); jTxtPreco.setText(String.valueOf(books.getPreco()));
+} else {
+JOptionPane.showMessageDialog(null, "Objeto não Encontrado!");
+}
+}
+
+private void jBtnIncluirMouseClicked(java.awt.event.MouseEvent evt) { books = new Books();
+books.setIsbn(jTxtIsbn.getText()); books.setTitulo(jTxtTitulo.getText()); books.setPublisher_id(Integer.parseInt(jTxtPublisherId.getText())); books.setPreco(Double.parseDouble(jTxtPreco.getText()));
+if (ctrManterBooks.gravarBooks(books) == 1) { JOptionPane.showMessageDialog(this, "Objeto persistido");
+} else {
+JOptionPane.showMessageDialog(this, "Objeto não persistido");
+
+}
+}
+
+private void jBtnExcluirMouseClicked(java.awt.event.MouseEvent evt) { books = (Books) jLstBooks.getSelectedValue();
+if (books != null) {
+if (ctrManterBooks.excluirBooks(books)) { JOptionPane.showMessageDialog(null, "Objeto Excluído");
+} else {
+JOptionPane.showMessageDialog(null, "Objeto não excluído");
+ 
+}
+} else {
+JOptionPane.showMessageDialog(null, "Selecione o Objeto");
+}
+}
+
+private void jBtnAlterarMouseClicked(java.awt.event.MouseEvent evt) { books = (Books) jLstBooks.getSelectedValue();
+if (books != null) { books.setIsbn(jTxtIsbn.getText()); books.setTitulo(jTxtTitulo.getText());
+books.setPublisher_id(Integer.parseInt(jTxtPublisherId.getText())); books.setPreco(Double.parseDouble(jTxtPreco.getText()));
+if (ctrManterBooks.alterarBooks(books)) { JOptionPane.showMessageDialog(null, "Objeto persistido");
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não persistido");
+}
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não localizado");
+}
+}
+public static void main(String args[]) { java.awt.EventQueue.invokeLater(new Runnable() { public void run() {
+new FormManterBooks().setVisible(true);
+}
+});
+}
+package model;
+
+import java.io.Serializable;
+import javax.persistence.Column; import javax.persistence.Entity;
+import javax.persistence.GeneratedValue; import javax.persistence.GenerationType; import javax.persistence.Id;
+import javax.persistence.JoinColumn; import javax.persistence.ManyToOne;
+
+@Entity
+public class BooksAuthor implements Serializable{
+ 
+@Id @Column(unique=true)
+@GeneratedValue(strategy=GenerationType.IDENTITY) private String isbn;
+private Integer author_id; private Integer seq_no;
+
+@ManyToOne @JoinColumn(name="authors") private Authors authors;
+
+
+
+
+public String getIsbn() { return isbn;
+}
+
+public void setIsbn(String isbn) { this.isbn = isbn;
+}
+
+public Integer getAuthor_id() { return author_id;
+}
+
+public void setAuthor_id(Integer author_id) { this.author_id = author_id;
+}
+
+public Integer getSeq_no() { return seq_no;
+}
+
+public void setSeq_no(Integer seq_no) { this.seq_no = seq_no;
+}
+
+public Authors getAuthors() { return authors;
+}
+
+public void setAuthors(Authors authors) { this.authors = authors;
+ 
+}
+
+public BooksAuthor() {
+}
+
+@Override
+public String toString() {
+return this.getSeq_no().toString();
+}
+}
+package control;
+
+import DAO.DaoBooksAuthor; import java.util.List;
+import model.BooksAuthor;
+import org.hibernate.HibernateException;
+
+
+public class CtrManterBooksAuthor { DaoBooksAuthor acessohibernatebkat;
+
+public CtrManterBooksAuthor() { acessohibernatebkat = new DaoBooksAuthor();
+}
+public int gravarBooksAuthor(BooksAuthor booksAuthor) { try {
+acessohibernatebkat.gravar(booksAuthor); return 1;
+} catch (HibernateException e) { e.printStackTrace();
+return 2;
+}
+}
+public List carregarBooksAuthor() { try {
+return acessohibernatebkat.carregarTudoOrdenado(BooksAuthor.class, "nome");
+} catch (HibernateException e) { return null;
+}
+}
+public boolean excluirBooksAuthor(BooksAuthor booksAuthor) { try {
+acessohibernatebkat.excluir(booksAuthor);
+ 
+return true;
+} catch (HibernateException e) { e.printStackTrace();
+return false;
+}
+}
+public boolean alterarBooksAuthor(BooksAuthor booksAuthor) { try {
+acessohibernatebkat.alterar(booksAuthor); return true;
+} catch (HibernateException e) { e.printStackTrace();
+return false;
+}
+}
+
+}
+package DAO;
+public class DaoBooksAuthor extends DaoGenerico{ public DaoBooksAuthor() {
+}
+
+}
+package view;
+
+import control.CtrManterBooksAuthor; import java.util.ArrayList;
+import java.util.Iterator; import java.util.List;
+import javax.swing.DefaultListModel; import javax.swing.JOptionPane; import model.BooksAuthor;
+public class FormBooksAuthor extends javax.swing.JFrame { CtrManterBooksAuthor ctrManterBooksAuthor = new
+CtrManterBooksAuthor();
+BooksAuthor booksAuthor; public FormBooksAuthor() {
+initComponents();
+}
+private void formWindowActivated(java.awt.event.WindowEvent evt) {
+ 
+DefaultListModel listModel = new DefaultListModel(); List listBooksAuthor = new ArrayList();
+listBooksAuthor = ctrManterBooksAuthor.carregarBooksAuthor(); if (listBooksAuthor != null) {
+Iterator i = listBooksAuthor.iterator(); while (i.hasNext()) {
+BooksAuthor bookAuthorList = (BooksAuthor) i.next(); listModel.addElement(bookAuthorList);
+}
+jLstBooksAuthor.setModel(listModel);
+
+}
+}
+
+private void jLstBooksAuthorMouseClicked(java.awt.event.MouseEvent evt)
+{
+booksAuthor = (BooksAuthor) jLstBooksAuthor.getSelectedValue(); if (booksAuthor != null) {
+jTxtIsbn.setText(booksAuthor.getIsbn()); jTxtauthor_id.setText(booksAuthor.getAuthor_id().toString()); jTxtSeq_no.setText(booksAuthor.getSeq_no().toString());
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não Encontrado!");
+}
+}
+
+private void jTxtIsbnMouseClicked(java.awt.event.MouseEvent evt) {
+// TODO add your handling code here:
+}
+
+private void jBtnExcluirMouseClicked(java.awt.event.MouseEvent evt) { booksAuthor = (BooksAuthor) jLstBooksAuthor.getSelectedValue();
+if (booksAuthor != null) {
+if (ctrManterBooksAuthor.excluirBooksAuthor(booksAuthor)) { JOptionPane.showMessageDialog(null, "Objeto Excluído");
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não excluído");
+}
+}
+else {
+JOptionPane.showMessageDialog(null, "Selecione o Objeto");
+}
+ 
+}
+
+private void jBtnIncluirMouseClicked(java.awt.event.MouseEvent evt) { booksAuthor = new BooksAuthor(); booksAuthor.setIsbn(jTxtIsbn.getText()); booksAuthor.setAuthor_id(Integer.parseInt(jTxtauthor_id.getText())); booksAuthor.setSeq_no(Integer.parseInt(jTxtSeq_no.getText()));
+if (ctrManterBooksAuthor.gravarBooksAuthor(booksAuthor) == 1) { JOptionPane.showMessageDialog(null, "Objeto persistido");
+} else {
+JOptionPane.showMessageDialog(null, "Objeto não persistido");
+}
+}
+
+private void jBtnAlterarMouseClicked(java.awt.event.MouseEvent evt) { booksAuthor = (BooksAuthor) jLstBooksAuthor.getSelectedValue();
+if (booksAuthor != null) { booksAuthor.setIsbn(jTxtIsbn.getText());
+booksAuthor.setAuthor_id(Integer.parseInt(jTxtauthor_id.getText())); booksAuthor.setSeq_no(Integer.parseInt(jTxtSeq_no.getText()));
+if (ctrManterBooksAuthor.alterarBooksAuthor(booksAuthor)) { JOptionPane.showMessageDialog(null, "Objeto persistido");
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não persistido");
+}
+}
+else {
+JOptionPane.showMessageDialog(null, "Objeto não localizado");
+}
+}
+public static void main(String args[]) { java.awt.EventQueue.invokeLater(new Runnable() {
+public void run() {
+new FormBooksAuthor().setVisible(true);
+}
+});
+}
+
+import DAO.TrabalhoAPSConfiguracao; import javax.swing.JFrame;
+import view.FormBooksAuthor; import view.FormManterAuthor; import view.FormManterBooks;
+ 
+import view.FormManterPublisher;
+
+public class Principal extends javax.swing.JFrame { JFrame tela;
+public Principal() {
+TrabalhoAPSConfiguracao configuracao = new TrabalhoAPSConfiguracao();
+configuracao.criaSessionFactory(); initComponents();
+}
+
+private void jBtnExibirAuthorActionPerformed(java.awt.event.ActionEvent evt)
+{
+tela = new FormManterAuthor(); carregarTela();
+}
+
+private void jExibirPubliActionPerformed(java.awt.event.ActionEvent evt) { tela = new FormManterPublisher();
+carregarTela();
+}
+
+private void jButtonBooksMouseClicked(java.awt.event.MouseEvent evt) { tela = new FormManterBooks();
+carregarTela();
+}
+
+private void jButtonBooksAuthorMouseClicked(java.awt.event.MouseEvent evt) {
+tela = new FormBooksAuthor(); carregarTela();
+}
+
+private void carregarTela(){ tela.setVisible(true); tela.setLocationRelativeTo(this);
+}
+
+public static void main(String args[]) { Principal telaPrincipal = new Principal(); telaPrincipal.setVisible(true);
+telaPrincipal.setExtendedState(MAXIMIZED_BOTH);
+}
